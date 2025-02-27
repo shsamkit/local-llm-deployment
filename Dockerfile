@@ -6,3 +6,6 @@ RUN apt-get update && apt-get install -y \
 
 RUN pip install gpt4all
 
+# Install NVIDIA driver
+RUN apt install libvulkan1
+RUN apt install libnvidia-gl-525-server
