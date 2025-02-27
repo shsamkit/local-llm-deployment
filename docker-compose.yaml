@@ -1,0 +1,16 @@
+services:
+  llm-host:
+    build:
+      context: .
+    container_name: llm-host
+    entrypoint: sleep infinity
+    volumes:
+      - ./app:/app
+    ports:
+      - "8000:8000"
+    networks:
+      - llm-network
+networks:
+  llm-network:
+    # Specify driver options
+    driver: bridge
