@@ -5,6 +5,7 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const chatContainerRef = useRef(null);
+  const [isTyping, setIsTyping] = useState(false);
 
   // Auto-scroll to the latest message
   useEffect(() => {
@@ -18,19 +19,24 @@ function App() {
 
     const newMessages = [...messages, { role: "user", content: input }];
     setMessages(newMessages);
+    setIsTyping(true);
+    setInput("");
+    setTimeout(async () => {
+      try {
+        const response = await axios.post("http://100.78.135.57:8081/v1/chat/completions", {
+          "model": "Llama 3 8B Instruct",
+          "messages": [{ role: "user", content: input }],
+          "max_tokens": 5000,
+          "temperature": 0.28
+        });
+        const botReply = response.data.choices[0].message.content;
+        setMessages([...newMessages, { role: "bot", content: botReply }]);
+      } catch (error) {
+        setMessages(prevMessages => [...prevMessages, { sender: "bot", text: "Error fetching response" }]);
+      }
+      setIsTyping(false); // Hide typing animation after response
+    }, 500); // Short delay (0.5s) to allow UI update
 
-    try {
-      const response = await axios.post("http://100.78.135.57:8081/v1/chat/completions", {
-        "model": "Llama 3 8B Instruct",
-        "messages": [{ role: "user", content: input }],
-        "max_tokens": 5000,
-        "temperature": 0.28
-      });
-      const botReply = response.data.choices[0].message.content;
-      setMessages([...newMessages, { role: "bot", content: botReply }]);
-    } catch (error) {
-      setMessages([...newMessages, { role: "bot", content: "Error fetching response" }]);
-    }
   };
 
   return (
@@ -43,6 +49,13 @@ function App() {
             <div style={{ whiteSpace: "pre-line" }}>{msg.content}</div> {/* Preserves newlines */}
           </div>
         ))}
+
+        {isTyping && (
+          <div style={styles.botMessage}>
+            <strong>Bot:</strong>
+            <span className="typing-dots"> ...</span>
+          </div>
+        )}
       </div>
       <div style={styles.inputContainer}>
         <input
