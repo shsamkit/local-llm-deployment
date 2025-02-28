@@ -29,10 +29,23 @@ function App() {
           "max_tokens": 5000,
           "temperature": 0.28
         });
-        const botReply = response.data.choices[0].message.content;
-        setMessages([...newMessages, { role: "bot", content: botReply }]);
+        const botReply = response.data.choices[0];
+        let replyContent = botReply.message.content;
+        if (botReply.references && botReply.references.length > 0) {
+          replyContent = replyContent + "\n\n Following files might be relevant to your query:"
+        }
+        let updatedMessages = [...newMessages, { role: "bot", content: replyContent }];
+
+        setMessages([...newMessages, { role: "bot", content: replyContent }]);
+        let references = botReply.references
+        if (references && references.length > 0) {
+          references.forEach(link => {
+            updatedMessages.push({ role: "bot", content: link.file, isReference: true });
+          });
+        }
+        setMessages(updatedMessages);
       } catch (error) {
-        setMessages(prevMessages => [...prevMessages, { sender: "bot", text: "Error fetching response" }]);
+        setMessages(prevMessages => [...prevMessages, { role: "bot", content: "Error fetching response" }]);
       }
       setIsTyping(false); // Hide typing animation after response
     }, 500); // Short delay (0.5s) to allow UI update
@@ -45,8 +58,11 @@ function App() {
       <div style={styles.chatBox} ref={chatContainerRef}>
         {messages.map((msg, index) => (
           <div key={index} style={msg.role === "user" ? styles.userMessage : styles.botMessage}>
-            <strong>{msg.role === "user" ? "You" : "Bot"}:</strong>
-            <div style={{ whiteSpace: "pre-line" }}>{msg.content}</div> {/* Preserves newlines */}
+            {msg.isReference ? (
+              <a href="https://www.google.com" target="_blank" rel="noopener noreferrer">{msg.content}</a>
+            ) : (
+              <div style={{ whiteSpace: "pre-line" }}><strong>{msg.role === "user" ? "You" : "Bot"}: </strong>{msg.content}</div>
+            )}
           </div>
         ))}
 
